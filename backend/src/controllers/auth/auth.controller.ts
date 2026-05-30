@@ -13,22 +13,20 @@ const REFRESH_COOKIE = 'refresh_token';
 const CSRF_COOKIE = 'csrf_token';
 
 const setAuthCookies = (res: Response, refreshToken: string, csrfToken: string) => {
-  res.cookie(REFRESH_COOKIE, refreshToken, {
+  const cookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite: isProduction ? 'none' : 'lax',
     domain: env.cookieDomain,
-    path: '/api/auth',
+    path: '/',
     maxAge: env.refreshTokenTtlDays * 24 * 60 * 60 * 1000
-  });
+  } as const;
+
+  res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions);
 
   res.cookie(CSRF_COOKIE, csrfToken, {
-    httpOnly: false,
-    secure: isProduction,
-    sameSite: 'strict',
-    domain: env.cookieDomain,
-    path: '/api/auth',
-    maxAge: env.refreshTokenTtlDays * 24 * 60 * 60 * 1000
+    ...cookieOptions,
+    httpOnly: false
   });
 };
 
