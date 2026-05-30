@@ -14,7 +14,10 @@ import { xssSanitizeMiddleware } from './interfaces/http/middlewares/xss.middlew
 export const createApp = () => {
   const app = express();
 
+  // Security headers middleware
   app.use(helmet());
+  
+  // CORS configuration - allows requests from frontend origin with credentials
   app.use(
     cors({
       origin: env.frontendOrigin,
@@ -23,14 +26,22 @@ export const createApp = () => {
     })
   );
 
+  // Request logging
   app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
+  
+  // Body parsing with size limits
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+  
+  // Cookie parsing for refresh token and CSRF token
   app.use(cookieParser());
+  
+  // Sanitization middlewares
   app.use(mongoSanitize());
   app.use(hpp());
   app.use(xssSanitizeMiddleware);
 
+  // Rate limiting for API endpoints
   app.use(
     '/api',
     rateLimit({
@@ -41,6 +52,7 @@ export const createApp = () => {
     })
   );
 
+  // Stricter rate limiting for auth endpoints
   app.use(
     '/api/auth',
     rateLimit({
@@ -51,9 +63,13 @@ export const createApp = () => {
     })
   );
 
+  // API routes
   app.use('/api', apiRouter);
+  
+  // Health check endpoint
   app.get('/health/live', (_req, res) => res.status(200).json({ status: 'ok' }));
 
+  // Error handling
   app.use(notFoundHandler);
   app.use(errorHandler);
 

@@ -9,9 +9,13 @@ import {
 import type { AuthenticatedRequest } from '../../interfaces/http/middlewares/auth.middleware.js';
 import { env, isProduction } from '../../config/env.js';
 
+// Cookie names for refresh token and CSRF protection
 const REFRESH_COOKIE = 'refresh_token';
 const CSRF_COOKIE = 'csrf_token';
 
+// Configure auth cookies for secure cross-site deployment
+// SameSite=None allows cookies to work when frontend is on Vercel and backend on Railway
+// Path=/ ensures cookies are sent to all routes for refresh endpoint
 const setAuthCookies = (res: Response, refreshToken: string, csrfToken: string) => {
   const cookieOptions = {
     httpOnly: true,
