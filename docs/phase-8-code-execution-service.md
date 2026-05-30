@@ -1,4 +1,4 @@
-# Phase 8 — Code Execution Service
+# Phase 8 ï¿½ Code Execution Service
 
 ## Implemented Scope
 - Secure execution API: `POST /api/execute`.
@@ -9,7 +9,7 @@
 
 ## Security Controls
 - **Container isolation**: each execution runs in a fresh ephemeral container.
-- **No network**: `--network none` prevents exfiltration and SSRF.
+- **No network**: `adasdasd--network none` prevents exfiltration and SSRF.
 - **Resource limits**:
   - `--cpus 0.5`
   - `--memory <MAX_MEMORY_MB>m`
