@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 import type { Server, Socket } from 'socket.io';
 import { RoomModel } from '../../../infrastructure/db/models/room.model.js';
+import { env } from '../../../config/env.js';
 import { runCodeViaExecutionService } from '../../../infrastructure/socket/execution.client.js';
 import {
   addRoomUser,
@@ -34,11 +35,36 @@ const hasRoomAccess = async (roomId: string, userId: string) => {
   return Boolean(room);
 };
 
+const ensureMembership = async (roomId: string, userId: string) => {
+  if (!Types.ObjectId.isValid(roomId)) return false;
+
+  const room = await RoomModel.findOne({ _id: roomId, isArchived: false }).select({ _id: 1, ownerId: 1 }).lean();
+  if (!room) return false;
+
+  const alreadyMember = await hasRoomAccess(roomId, userId);
+  if (alreadyMember) return true;
+
+  await RoomModel.updateOne(
+    { _id: roomId, 'collaborators.userId': { $ne: new Types.ObjectId(userId) } },
+    {
+      $addToSet: {
+        collaborators: {
+          userId: new Types.ObjectId(userId),
+          role: 'editor',
+          joinedAt: new Date()
+        }
+      }
+    }
+  );
+
+  return true;
+};
+
 export const registerCollaborationHandlers = (io: TypedServer, socket: TypedSocket) => {
   socket.on('join-room', async (payload, ack) => {
-    const allowed = await hasRoomAccess(payload.roomId, socket.data.userId);
+    const joined = await ensureMembership(payload.roomId, socket.data.userId);
 
-    if (!allowed) {
+    if (!joined) {
       socket.emit('socket-error', { code: 'ROOM_FORBIDDEN', message: 'You cannot join this room' });
       ack?.({ ok: false, message: 'Forbidden' });
       return;
@@ -116,6 +142,11 @@ export const registerCollaborationHandlers = (io: TypedServer, socket: TypedSock
   });
 
   socket.on('run-code', async (payload) => {
+    if (env.disableExecution) {
+      socket.emit('socket-error', { code: 'EXECUTION_DISABLED', message: 'Code execution is currently disabled' });
+      return;
+    }
+
     const allowed = await hasRoomAccess(payload.roomId, socket.data.userId);
     if (!allowed) {
       socket.emit('socket-error', { code: 'ROOM_FORBIDDEN', message: 'Cannot execute in this room' });

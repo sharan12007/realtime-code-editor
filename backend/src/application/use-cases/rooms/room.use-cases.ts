@@ -31,6 +31,12 @@ export const getRoomForUser = async (roomId: string, userId: string) => {
   }).lean();
 };
 
+export const findRoomByCode = async (roomCode: string) => {
+  return RoomModel.findOne({ roomSlug: roomCode.toLowerCase().trim(), isArchived: false })
+    .select({ _id: 1, roomName: 1, roomSlug: 1 })
+    .lean();
+};
+
 export const deleteRoomForUser = async (roomId: string, userId: string) => {
   const deleted = await RoomModel.findOneAndUpdate(
     { _id: roomId, ownerId: userId, isArchived: false },

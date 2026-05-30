@@ -4,6 +4,7 @@ import { createRoomSchema } from '../../interfaces/http/validators/room.validato
 import {
   createRoomForUser,
   deleteRoomForUser,
+  findRoomByCode,
   getRoomForUser,
   listRoomsForUser
 } from '../../application/use-cases/rooms/room.use-cases.js';
@@ -34,6 +35,19 @@ export const getRoomController = async (req: AuthenticatedRequest, res: Response
 
   const room = await getRoomForUser(roomId, userId);
   if (!room) return res.status(404).json({ message: 'Room not found' });
+  return res.status(200).json({ room });
+};
+
+export const getRoomByCodeController = async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.sub;
+  const roomCode = req.params.code;
+
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+  if (!roomCode) return res.status(400).json({ message: 'Invalid room code' });
+
+  const room = await findRoomByCode(roomCode);
+  if (!room) return res.status(404).json({ message: 'Room not found' });
+
   return res.status(200).json({ room });
 };
 

@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
+import '@fontsource-variable/inter';
+import '@fontsource/jetbrains-mono';
 import { router } from './routes';
 import './styles/index.css';
 import { ErrorBoundary } from './components/feedback/ErrorBoundary';

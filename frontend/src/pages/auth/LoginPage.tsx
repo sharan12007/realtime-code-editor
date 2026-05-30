@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthCard } from '../../components/auth/AuthCard';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Label } from '../../components/ui/Label';
 import { useAuthStore } from '../../store/auth.store';
 import { useToastStore } from '../../components/feedback/Toast';
 
@@ -28,20 +29,14 @@ export const LoginPage = () => {
   return (
     <AuthCard title="Sign In" subtitle="Continue to your collaborative rooms">
       <form className="space-y-4" onSubmit={onSubmit}>
-        <Input
-          label="Email"
-          type="email"
-          value={form.email}
-          onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-          required
-        />
-        <Input
-          label="Password"
-          type="password"
-          value={form.password}
-          onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-          required
-        />
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" type="email" value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} required />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input id="password" type="password" value={form.password} onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))} required />
+        </div>
         <Button loading={loading} type="submit" className="w-full">
           Login
         </Button>

@@ -1,7 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { env } from '../config/env.js';
 import type { ExecuteRequest } from '../types/execute.js';
@@ -93,10 +90,7 @@ const runProcess = (
       });
     });
 
-    if (stdin) {
-      child.stdin.write(stdin);
-    }
-
+    if (stdin) child.stdin.write(stdin);
     child.stdin.end();
   });
 };
@@ -104,46 +98,48 @@ const runProcess = (
 export const executeInSandbox = async (payload: ExecuteRequest): Promise<ExecutionResult> => {
   const config = languageConfig[payload.language];
   const startedAt = Date.now();
-  const workspace = await mkdtemp(path.join(tmpdir(), 'collab-run-'));
   const containerName = `collab-run-${randomUUID()}`;
+  const codeB64 = Buffer.from(payload.code, 'utf8').toString('base64');
+
+  const prepareSource = `mkdir -p /workspace && echo "$CODE_B64" | base64 -d > /workspace/${config.sourceFile}`;
+  const command = config.compileCommand
+    ? `${prepareSource} && ${config.compileCommand} && ${config.runCommand}`
+    : `${prepareSource} && ${config.runCommand}`;
+
+  const dockerArgs = [
+    'run',
+    '--name',
+    containerName,
+    '--rm',
+    '-i',
+    '--network',
+    'none',
+    '--cpus',
+    '0.5',
+    '--memory',
+    `${env.maxMemoryMb}m`,
+    '--pids-limit',
+    '128',
+    '--read-only',
+    '--tmpfs',
+    '/tmp:rw,noexec,nosuid,size=64m',
+    '--tmpfs',
+    '/workspace:rw,nosuid,size=64m',
+    '--cap-drop',
+    'ALL',
+    '--security-opt',
+    'no-new-privileges',
+    '-e',
+    `CODE_B64=${codeB64}`,
+    '-w',
+    '/workspace',
+    config.image,
+    'sh',
+    '-lc',
+    command
+  ];
 
   try {
-    await writeFile(path.join(workspace, config.sourceFile), payload.code, 'utf8');
-
-    const command = config.compileCommand
-      ? `${config.compileCommand} && ${config.runCommand}`
-      : config.runCommand;
-
-    const dockerArgs = [
-      'run',
-      '--name',
-      containerName,
-      '--rm',
-      '--network',
-      'none',
-      '--cpus',
-      '0.5',
-      '--memory',
-      `${env.maxMemoryMb}m`,
-      '--pids-limit',
-      '128',
-      '--read-only',
-      '--tmpfs',
-      '/tmp:rw,noexec,nosuid,size=64m',
-      '--cap-drop',
-      'ALL',
-      '--security-opt',
-      'no-new-privileges',
-      '-v',
-      `${workspace}:/workspace:rw`,
-      '-w',
-      '/workspace',
-      config.image,
-      'sh',
-      '-lc',
-      command
-    ];
-
     const result = await runProcess(env.dockerBin, dockerArgs, env.maxExecutionTimeMs, payload.stdin ?? '');
 
     return {
@@ -154,7 +150,6 @@ export const executeInSandbox = async (payload: ExecuteRequest): Promise<Executi
       status: result.timedOut ? 'timeout' : result.exitCode === 0 ? 'success' : 'error'
     };
   } finally {
-    await rm(workspace, { recursive: true, force: true });
     await runProcess(env.dockerBin, ['rm', '-f', containerName], 2000).catch(() => undefined);
   }
 };

@@ -20,6 +20,7 @@ export const env = {
   refreshTokenTtlDays: parseNumber(process.env.REFRESH_TOKEN_TTL_DAYS, 7),
   frontendOrigin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
   executionServiceUrl: process.env.EXECUTION_SERVICE_URL ?? 'http://localhost:5001',
+  disableExecution: process.env.DISABLE_EXECUTION === 'true',
   bcryptRounds: parseNumber(process.env.BCRYPT_ROUNDS, 12),
   cookieDomain: process.env.COOKIE_DOMAIN || undefined
 } as const;
