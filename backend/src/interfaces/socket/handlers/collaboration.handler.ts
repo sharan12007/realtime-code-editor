@@ -142,11 +142,13 @@ export const registerCollaborationHandlers = (io: TypedServer, socket: TypedSock
   });
 
   socket.on('run-code', async (payload) => {
+    // Check if code execution is disabled (e.g., when execution-service is not available)
     if (env.disableExecution) {
       socket.emit('socket-error', { code: 'EXECUTION_DISABLED', message: 'Code execution is currently disabled' });
       return;
     }
 
+    // Verify user has access to the room
     const allowed = await hasRoomAccess(payload.roomId, socket.data.userId);
     if (!allowed) {
       socket.emit('socket-error', { code: 'ROOM_FORBIDDEN', message: 'Cannot execute in this room' });

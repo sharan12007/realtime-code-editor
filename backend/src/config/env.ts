@@ -13,16 +13,22 @@ const parseNumber = (value: string | undefined, fallback: number) => {
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parseNumber(process.env.PORT, 4000),
+  // MongoDB connection string - connects to collab_editor database
   mongoUri: required(process.env.MONGO_URI, 'MONGO_URI'),
+  // JWT secrets for access and refresh tokens
   jwtAccessSecret: required(process.env.JWT_ACCESS_SECRET, 'JWT_ACCESS_SECRET'),
   jwtRefreshSecret: required(process.env.JWT_REFRESH_SECRET, 'JWT_REFRESH_SECRET'),
   accessTokenTtl: process.env.ACCESS_TOKEN_TTL ?? '15m',
   refreshTokenTtlDays: parseNumber(process.env.REFRESH_TOKEN_TTL_DAYS, 7),
+  // Frontend origin for CORS - required for cross-site deployment
   frontendOrigin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+  // Execution service URL - can be disabled via DISABLE_EXECUTION flag
   executionServiceUrl: process.env.EXECUTION_SERVICE_URL ?? 'http://localhost:5001',
+  // Feature flag to disable code execution service
   disableExecution: process.env.DISABLE_EXECUTION === 'true',
   bcryptRounds: parseNumber(process.env.BCRYPT_ROUNDS, 12),
   cookieDomain: process.env.COOKIE_DOMAIN || undefined
 } as const;
+
 
 export const isProduction = env.nodeEnv === 'production';
